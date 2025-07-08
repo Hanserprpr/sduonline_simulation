@@ -18,12 +18,39 @@ CREATE DATABASE sduonline_simulation
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL,
+    casdoor_sub VARCHAR(50) UNIQUE NOT NULL,
+    password VARCHAR(255),
+    avatar VARCHAR(255),
     email VARCHAR(100) NOT NULL UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 ```
 
-- 注：密码字段使用VARCHAR(255)以存储加密后的密码。
+---
+
+## 志愿时长（学线币）
+
+```sql
+CREATE TABLE coins (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    coins INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+```
 
 ---
+
+## 暂存表(temp)
+
+```sql
+CREATE TABLE temp (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    completed_levels JSON COMMENT '已完成的关卡列表',
+    total_duration INT DEFAULT 0 COMMENT '总时长（秒）',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+```
