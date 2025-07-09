@@ -1,27 +1,35 @@
 package com.orbithy.sduonline_simulation.service;
 
 import com.orbithy.sduonline_simulation.data.po.Coins;
+import com.orbithy.sduonline_simulation.data.po.Temp;
 import com.orbithy.sduonline_simulation.data.po.User;
 import com.orbithy.sduonline_simulation.data.vo.Result;
 import com.orbithy.sduonline_simulation.mapper.CoinMapper;
+import com.orbithy.sduonline_simulation.mapper.TempMapper;
 import com.orbithy.sduonline_simulation.mapper.UserMapper;
 import com.orbithy.sduonline_simulation.utils.ResponseUtil;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+
+import java.util.ArrayList;
 
 @Service
 public class UserService {
 
     private final UserMapper userMapper;
     private final CoinMapper coinMapper;
+    private final TempMapper tempMapper;
 
-    public UserService(UserMapper userMapper, CoinMapper coinMapper) {
+    public UserService(UserMapper userMapper, CoinMapper coinMapper, TempMapper tempMapper) {
         this.userMapper = userMapper;
         this.coinMapper = coinMapper;
+        this.tempMapper = tempMapper;
     }
 
+    @Transactional
     public ResponseEntity<Result> getMe(OidcUser oidcuser) {
         String sub = oidcuser.getSubject();
         if (sub == null || sub.isEmpty()) {
@@ -39,6 +47,11 @@ public class UserService {
             coins.setSub(sub);
             coins.setCoins(0);
             coinMapper.insert(coins);
+            Temp temp = new Temp();
+            temp.setSub(sub);
+            temp.setCompleted_levels(new ArrayList<>());
+            temp.setTotal_duration(0);
+            tempMapper.insert(temp);
         } else {
             user = userMapper.findByCasdoorSub(sub);
         }
