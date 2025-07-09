@@ -1,5 +1,6 @@
 package com.orbithy.sduonline_simulation.controller;
 
+import com.orbithy.sduonline_simulation.annotation.sub;
 import com.orbithy.sduonline_simulation.data.vo.Result;
 import com.orbithy.sduonline_simulation.mapper.CoinMapper;
 import com.orbithy.sduonline_simulation.service.UserService;
@@ -35,8 +36,8 @@ public class UserController {
     }
 
     @GetMapping("/coins")
-    public ResponseEntity<Result> getCoins(@AuthenticationPrincipal OidcUser oidcUser) {
-        String sub = oidcUser.getSubject();
+    public ResponseEntity<Result> getCoins(@sub String sub) {
+
         if (sub == null || sub.isEmpty()) {
             return ResponseEntity.badRequest().body(Result.error(403, "用户ID (sub) 缺失"));
         }
