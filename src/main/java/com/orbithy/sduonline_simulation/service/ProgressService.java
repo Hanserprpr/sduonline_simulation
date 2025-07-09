@@ -1,5 +1,6 @@
 package com.orbithy.sduonline_simulation.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.orbithy.sduonline_simulation.annotation.sub;
 import com.orbithy.sduonline_simulation.cache.IGlobalCache;
 import com.orbithy.sduonline_simulation.data.po.Temp;
@@ -12,6 +13,7 @@ import org.apache.ibatis.jdbc.Null;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
@@ -29,8 +31,11 @@ public class ProgressService {
         this.redis = redis;
     }
 
-    public ResponseEntity<Result> begin(@sub String sub, String level, HttpServletRequest request) {
-        Temp temp = tempMapper.findBySub(sub);
+    @Transactional
+    public ResponseEntity<Result> begin(String sub, String level, HttpServletRequest request) {
+        QueryWrapper<Temp> wrapper = new QueryWrapper<>();
+        wrapper.eq("sub", sub);
+        Temp temp = tempMapper.selectOne(wrapper);
         List<String> levels = temp.getCompleted_levels();
         // 如果level在已完成关卡列表中，返回错误
         if (levels != null && levels.contains(level)) {
@@ -41,8 +46,11 @@ public class ProgressService {
         return ResponseUtil.build(Result.ok());
     }
 
-    public ResponseEntity<Result> end(@sub String sub, String level, HttpServletRequest request) {
-        Temp temp = tempMapper.findBySub(sub);
+    @Transactional
+    public ResponseEntity<Result> end(String sub, String level, HttpServletRequest request) {
+        QueryWrapper<Temp> wrapper = new QueryWrapper<>();
+        wrapper.eq("sub", sub);
+        Temp temp = tempMapper.selectOne(wrapper);
         List<String> levels = temp.getCompleted_levels();
         if (levels != null && levels.contains(level)) {
             logUtil.error(sub, null, request, level, "关卡重复结束");
