@@ -47,10 +47,27 @@ CREATE TABLE coins (
 ```sql
 CREATE TABLE temp (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
+    sub VARCHAR(50) NOT NULL,
     completed_levels JSON COMMENT '已完成的关卡列表',
     total_duration INT DEFAULT 0 COMMENT '总时长（秒）',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (sub) REFERENCES users(casdoor_sub) ON DELETE CASCADE
+);
+```
+
+## 游戏历史(score_records)
+
+```sql
+CREATE TABLE score_records (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    sub VARCHAR(50) NOT NULL,
+    duration_seconds INT,
+    ip VARCHAR(45),
+    user_agent VARCHAR(255),
+    level VARCHAR(50),
+    log_level VARCHAR(10),
+    message TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (sub) REFERENCES users(casdoor_sub)
 );
 ```
