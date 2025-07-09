@@ -1,5 +1,9 @@
 package com.orbithy.sduonline_simulation.controller;
 
+import com.orbithy.sduonline_simulation.data.vo.Result;
+import com.orbithy.sduonline_simulation.service.UserService;
+import jakarta.annotation.Resource;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -10,15 +14,13 @@ import java.util.Map;
 
 @RestController
 public class UserController {
+    @Resource
+    private UserService userService;
 
     @GetMapping("/api/me")
-    public Map<String, Object> me(@AuthenticationPrincipal OidcUser user) {
-        Map<String, Object> result = new HashMap<>();
-        result.put("sub", user.getSubject());
-        result.put("name", user.getAttributes().get("displayName"));
-        result.put("email", user.getEmail());
-        result.put("avatar", user.getAttributes().get("avatar"));
-        return result;
+    public ResponseEntity<Result> me(@AuthenticationPrincipal OidcUser user) {
+        return userService.getMe(user);
+
     }
 
     @GetMapping("/api/getId")
