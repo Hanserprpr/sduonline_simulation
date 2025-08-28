@@ -20,7 +20,12 @@ public class User implements Serializable {
     @TableId(type = IdType.AUTO)
     private Integer id;
     private String username;
+    @TableField("SDUId")
+    private Integer SDUId;
     private String casdoorSub;
+    private String password;
+    private Integer coins;
+    private Integer maxCoins;
     private String avatar;
     private String email;
     private String createdAt;

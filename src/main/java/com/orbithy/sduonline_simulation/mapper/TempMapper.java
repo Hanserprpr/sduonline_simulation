@@ -8,5 +8,5 @@ import org.apache.ibatis.annotations.Select;
 @Mapper
 public interface TempMapper extends BaseMapper<Temp> {
     @Select("SELECT completed_levels FROM temp WHERE sub = #{sub}")
-    Temp findBySub(String sub);
+    Temp findById(String sub);
 }

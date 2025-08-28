@@ -19,8 +19,7 @@ public class Temp {
     @TableId(type = IdType.AUTO)
     private Integer id;
 
-    private String sub;
-    @TableField(typeHandler = JsonTypeHandler.class)
-    private List<String> completed_levels;
-    private long total_duration;
+    private Integer SDUId;
+    private String message;
+    private String createdAt;
 }

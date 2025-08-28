@@ -17,7 +17,9 @@ public interface UserMapper extends BaseMapper<User> {
 
     @Select("SELECT * FROM users WHERE casdoor_sub = #{casdoorSub}")
     User findByCasdoorSub(String casdoorSub);
-    
+
+    User findBySDUId(int sduId);
+
 //    /**
 //     * 获取用户排行榜数据
 //     * 根据coins表中的coins总量排序

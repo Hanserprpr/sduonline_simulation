@@ -9,98 +9,238 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class RankService {
 
     private final UserMapper userMapper;
-    private final IGlobalCache globalCache;
+    private final IGlobalCache cache;
     
-    // Redis中存储排行榜的key
-    private static final String RANK_KEY = "user_coins_rank";
+    private static final String COINS_RANK_KEY = "rank:coins";
+    private static final String MAX_COINS_RANK_KEY = "rank:maxcoins";
+    private static final long CACHE_EXPIRE_TIME = 300; // 5分钟过期时间
     
     @Autowired
-    public RankService(UserMapper userMapper, IGlobalCache globalCache) {
+    public RankService(UserMapper userMapper, IGlobalCache cache) {
         this.userMapper = userMapper;
-        this.globalCache = globalCache;
+        this.cache = cache;
     }
-    
+
     /**
-     * 获取学线币排行榜数据
-     * 从Redis中获取基于coins总量的排行榜数据，如果不存在则从数据库获取并存入Redis
+     * 获取基于coins的排行榜
+     * @param limit 返回排行榜的条数，默认10条
      * @return 排行榜数据
      */
-    public ResponseEntity<Result> getGrossAmountRank() {
-        Map<String, Object> rankData = new HashMap<>();
-        
-        // 从Redis中获取排行榜数据
-        Set<Object> rankSet = globalCache.zReverseRange(RANK_KEY, 0, -1);
-        
-        // 如果Redis中没有数据，则从数据库获取并存入Redis
-        if (rankSet == null || rankSet.isEmpty()) {
-            updateRankDataToRedis();
-            rankSet = globalCache.zReverseRange(RANK_KEY, 0, -1);
-        }
-        
-        // 转换排行榜数据格式
-        List<Map<String, Object>> userRankList = new ArrayList<>();
-        int rank = 1;
-        for (Object obj : rankSet) {
-            if (obj instanceof User) {
-                User user = (User) obj;
-                Map<String, Object> userMap = new HashMap<>();
-                userMap.put("id", user.getId());
-                userMap.put("username", user.getUsername());
-                userMap.put("coins", globalCache.zScore(RANK_KEY, user));
-                userMap.put("rank", rank++);
-                userRankList.add(userMap);
+    public ResponseEntity<Result> getCoinsRankList(Integer limit) {
+        try {
+            if (limit == null || limit <= 0) {
+                limit = 10;
             }
+            
+            // 先尝试从缓存获取
+            Set<Object> rankSet = cache.zReverseRange(COINS_RANK_KEY, 0, limit - 1);
+            
+            if (rankSet == null || rankSet.isEmpty()) {
+                // 缓存未命中，重新构建排行榜
+                log.info("Coins排行榜缓存未命中，重新构建");
+                refreshCoinsRankCache();
+                rankSet = cache.zReverseRange(COINS_RANK_KEY, 0, limit - 1);
+            }
+            
+            List<Map<String, Object>> result = new ArrayList<>();
+            int rank = 1;
+            
+            for (Object userIdObj : rankSet) {
+                try {
+                    Integer userId = Integer.valueOf(userIdObj.toString());
+                    User user = userMapper.selectById(userId);
+                    if (user != null) {
+                        Map<String, Object> userRank = new HashMap<>();
+                        userRank.put("rank", rank++);
+                        userRank.put("userId", user.getId());
+                        userRank.put("username", user.getUsername());
+                        userRank.put("coins", user.getCoins());
+                        userRank.put("avatar", user.getAvatar());
+                        result.add(userRank);
+                    }
+                } catch (Exception e) {
+                    log.error("处理用户排行榜数据时出错: {}", e.getMessage());
+                }
+            }
+            
+            return ResponseUtil.build(Result.success(result,"获取成功"));
+        } catch (Exception e) {
+            log.error("获取coins排行榜失败: {}", e.getMessage());
+            return ResponseUtil.build(Result.error(403, e.getMessage()));
         }
-        
-        rankData.put("userRankList", userRankList);
-        return ResponseUtil.build(Result.success(rankData, "获取排行信息成功"));
     }
 
-    private void updateRankDataToRedis() {
-    }
-
-
-//    /**
-//     * 更新单个用户的排行榜数据
-//     * @param userId 用户ID
-//     * @param coins 新的coins总量
-//     */
-//    public ResponseEntity<Result> updateUserRank(Long userId, double coins) {
-//        User user = userMapper.selectById(userId);
-//        if (user != null) {
-//            // 更新用户coins总量
-//            // 注意：这里只更新Redis中的排行榜数据，实际的coins更新应该在coins表中进行
-//            // 这里假设coins表的更新已经在其他地方完成
-//
-//            // 更新Redis中的排行榜数据
-//            if (globalCache.hasKey(RANK_KEY)) {
-//                // 如果用户已在排行榜中，先移除
-//                globalCache.zRemove(RANK_KEY, user);
-//                // 添加用户到排行榜，使用新的coins总量
-//                globalCache.zAdd(RANK_KEY, user, coins);
-//            }
-//        }
-//        return ResponseUtil.build(Result.ok());
-//    }
-    
     /**
-     * 定时更新排行榜数据
-     * 每小时执行一次
+     * 获取基于maxCoins的排行榜
+     * @param limit 返回排行榜的条数，默认10条
+     * @return 排行榜数据
      */
-    @Scheduled(fixedRate = 3600000)
-    public void scheduledUpdateRank() {
-        updateRankDataToRedis();
+    public ResponseEntity<Result> getMaxCoinsRankList(Integer limit) {
+        try {
+            if (limit == null || limit <= 0) {
+                limit = 10;
+            }
+            
+            // 先尝试从缓存获取
+            Set<Object> rankSet = cache.zReverseRange(MAX_COINS_RANK_KEY, 0, limit - 1);
+            
+            if (rankSet == null || rankSet.isEmpty()) {
+                // 缓存未命中，重新构建排行榜
+                log.info("MaxCoins排行榜缓存未命中，重新构建");
+                refreshMaxCoinsRankCache();
+                rankSet = cache.zReverseRange(MAX_COINS_RANK_KEY, 0, limit - 1);
+            }
+            
+            List<Map<String, Object>> result = new ArrayList<>();
+            int rank = 1;
+            
+            for (Object userIdObj : rankSet) {
+                try {
+                    Integer userId = Integer.valueOf(userIdObj.toString());
+                    User user = userMapper.selectById(userId);
+                    if (user != null) {
+                        Map<String, Object> userRank = new HashMap<>();
+                        userRank.put("rank", rank++);
+                        userRank.put("userId", user.getId());
+                        userRank.put("username", user.getUsername());
+                        userRank.put("maxCoins", user.getMaxCoins());
+                        userRank.put("avatar", user.getAvatar());
+                        result.add(userRank);
+                    }
+                } catch (Exception e) {
+                    log.error("处理用户maxCoins排行榜数据时出错: {}", e.getMessage());
+                }
+            }
+
+            return ResponseUtil.build(Result.success(result,"获取成功"));
+        } catch (Exception e) {
+            log.error("获取maxCoins排行榜失败: {}", e.getMessage());
+            return ResponseUtil.build(Result.error(403, e.getMessage()));
+        }
     }
 
+    /**
+     * 刷新coins排行榜缓存（使用快照+原子重命名避免读写冲突）
+     */
+    public void refreshCoinsRankCache() {
+        try {
+            log.info("开始刷新coins排行榜缓存");
+            final String tmpKey = COINS_RANK_KEY + ":tmp";
 
-    public ResponseEntity<Result> getMaximumRank() {
-        return null;
+            // 先清理临时键
+            cache.del(tmpKey);
+
+            // 查询所有用户的coins数据
+            List<User> users = userMapper.selectList(null);
+
+            // 将数据写入临时ZSet
+            int added = 0;
+            for (User user : users) {
+                if (user.getCoins() != null && user.getCoins() > 0) {
+                    if (cache.zAdd(tmpKey, user.getId(), user.getCoins().doubleValue())) {
+                        added++;
+                    }
+                }
+            }
+
+            if (added == 0) {
+                // 若没有数据，保持旧快照不动，避免出现空窗口
+                log.info("coins排行榜暂无有效数据，保留旧快照");
+                return;
+            }
+
+            // 设置临时键过期时间
+            cache.expire(tmpKey, CACHE_EXPIRE_TIME);
+
+            // 原子切换：将临时键重命名为正式键
+            try {
+                @SuppressWarnings("unchecked")
+                RedisTemplate<String, Object> rt = (RedisTemplate<String, Object>) cache.getRedisTemplate();
+                rt.rename(tmpKey, COINS_RANK_KEY);
+            } catch (Exception e) {
+                log.error("重命名coins快照键失败: {}", e.getMessage());
+                // 失败时删除临时键，避免泄漏
+                cache.del(tmpKey);
+                throw e;
+            }
+
+            log.info("coins排行榜缓存刷新完成，写入 {} 条记录", added);
+        } catch (Exception e) {
+            log.error("刷新coins排行榜缓存失败: {}", e.getMessage());
+        }
     }
+
+    /**
+     * 刷新maxCoins排行榜缓存（使用快照+原子重命名避免读写冲突）
+     */
+    public void refreshMaxCoinsRankCache() {
+        try {
+            log.info("开始刷新maxCoins排行榜缓存");
+            final String tmpKey = MAX_COINS_RANK_KEY + ":tmp";
+
+            // 先清理临时键
+            cache.del(tmpKey);
+
+            // 查询所有用户的maxCoins数据
+            List<User> users = userMapper.selectList(null);
+
+            // 将数据写入临时ZSet
+            int added = 0;
+            for (User user : users) {
+                if (user.getMaxCoins() != null && user.getMaxCoins() > 0) {
+                    if (cache.zAdd(tmpKey, user.getId(), user.getMaxCoins().doubleValue())) {
+                        added++;
+                    }
+                }
+            }
+
+            if (added == 0) {
+                // 若没有数据，保持旧快照不动，避免出现空窗口
+                log.info("maxCoins排行榜暂无有效数据，保留旧快照");
+                return;
+            }
+
+            // 设置临时键过期时间
+            cache.expire(tmpKey, CACHE_EXPIRE_TIME);
+
+            // 原子切换：将临时键重命名为正式键
+            try {
+                @SuppressWarnings("unchecked")
+                RedisTemplate<String, Object> rt = (RedisTemplate<String, Object>) cache.getRedisTemplate();
+                rt.rename(tmpKey, MAX_COINS_RANK_KEY);
+            } catch (Exception e) {
+                log.error("重命名maxCoins快照键失败: {}", e.getMessage());
+                // 失败时删除临时键，避免泄漏
+                cache.del(tmpKey);
+                throw e;
+            }
+
+            log.info("maxCoins排行榜缓存刷新完成，写入 {} 条记录", added);
+        } catch (Exception e) {
+            log.error("刷新maxCoins排行榜缓存失败: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * 定时任务：每5分钟自动刷新排行榜缓存
+     */
+    @Scheduled(fixedRate = 300000) // 5分钟 = 300000毫秒
+    public void scheduledRefreshRankCache() {
+        log.info("定时任务：开始刷新排行榜缓存");
+        refreshCoinsRankCache();
+        refreshMaxCoinsRankCache();
+        log.info("定时任务：排行榜缓存刷新完成");
+    }
+
 }

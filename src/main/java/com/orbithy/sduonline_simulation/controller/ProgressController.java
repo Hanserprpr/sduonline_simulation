@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDateTime;
+
 @RestController
 @RequestMapping("/api/progress")
 public class ProgressController {
@@ -24,12 +26,25 @@ public class ProgressController {
     }
 
     @PostMapping("/begin")
-    public ResponseEntity<Result> begin(@sub String sub, @RequestParam(required = false) String level, HttpServletRequest request) {
-        return progressService.begin(sub, level, request);
+    public ResponseEntity<Result> begin(Integer SDUId, @RequestParam(required = false) String level, HttpServletRequest request) {
+        return progressService.begin(SDUId, level, request);
     }
 
     @PostMapping("/end")
     public ResponseEntity<Result> end(@sub String sub, @RequestParam(required = false) String level, HttpServletRequest request) {
         return progressService.end(sub, level, request);
+    }
+
+    // 更改游戏状态接口：可修改items、total、status、orderTime、totalDevTime、preparationProgress
+    @PostMapping("/update-game-status")
+    public ResponseEntity<Result> updateGameStatus(@RequestParam Long orderId,
+                                                   @RequestParam(required = false) String items,
+                                                   @RequestParam(required = false) Integer total,
+                                                   @RequestParam(required = false) String status,
+                                                   @RequestParam(required = false) LocalDateTime orderTime,
+                                                   @RequestParam(required = false) Integer totalDevTime,
+                                                   @RequestParam(required = false) Integer preparationProgress,
+                                                   HttpServletRequest request) {
+        return progressService.updateGameStatus(orderId, items, total, status, orderTime, totalDevTime, preparationProgress, request);
     }
 }
