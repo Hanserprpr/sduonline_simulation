@@ -48,7 +48,7 @@ public class AppRedisCacheManager implements IGlobalCache {
 
     @Override
     public boolean hasKey(String key) {
-        return Boolean.TRUE.equals(redisTemplate.hasKey(key));
+        return redisTemplate.hasKey(key);
     }
 
     @Override

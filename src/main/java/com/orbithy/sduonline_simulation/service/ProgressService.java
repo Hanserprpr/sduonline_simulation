@@ -1,25 +1,19 @@
 package com.orbithy.sduonline_simulation.service;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.orbithy.sduonline_simulation.annotation.sub;
-import com.orbithy.sduonline_simulation.cache.IGlobalCache;
 import com.orbithy.sduonline_simulation.data.po.Order;
-import com.orbithy.sduonline_simulation.data.po.Temp;
 import com.orbithy.sduonline_simulation.data.po.User;
 import com.orbithy.sduonline_simulation.data.vo.Result;
 import com.orbithy.sduonline_simulation.mapper.OrderMapper;
-import com.orbithy.sduonline_simulation.mapper.TempMapper;
 import com.orbithy.sduonline_simulation.mapper.UserMapper;
 import com.orbithy.sduonline_simulation.utils.LogUtil;
 import com.orbithy.sduonline_simulation.utils.ResponseUtil;
 import jakarta.servlet.http.HttpServletRequest;
-import org.apache.ibatis.jdbc.Null;
-import org.jetbrains.annotations.NotNull;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.RequestParam;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -28,34 +22,35 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+@Slf4j
 @Service
 public class ProgressService {
 
-    private final TempMapper tempMapper;
     private final LogUtil logUtil;
-    private final IGlobalCache redis;
     private final UserMapper userMapper;
     private final OrderMapper orderMapper;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public ProgressService(TempMapper tempMapper, LogUtil logUtil, IGlobalCache redis, UserMapper userMapper, OrderMapper orderMapper) {
-        this.tempMapper = tempMapper;
+    public ProgressService(LogUtil logUtil, UserMapper userMapper, OrderMapper orderMapper) {
         this.logUtil = logUtil;
-        this.redis = redis;
         this.userMapper = userMapper;
         this.orderMapper = orderMapper;
     }
 
     @Transactional
-    public ResponseEntity<Result> begin(Integer SDUId, String level, HttpServletRequest request) {
+    public ResponseEntity<Result> begin(String SDUId, HttpServletRequest request) {
         try {
+            String level = null;
             // 参数校验
             if (SDUId == null) {
                 logUtil.error("null", null, request, level, "SDUId为空");
                 return ResponseUtil.build(Result.error(400, "SDUId is required"));
             }
-            
-            User user = userMapper.findBySDUId(SDUId);
+
+            User user = userMapper.selectOne(
+                    new LambdaQueryWrapper<User>().eq(User::getSDUId, SDUId)
+            );
+
             if (user == null) {
                 logUtil.error(String.valueOf(SDUId), null, request, level, "用户不存在");
                 return ResponseUtil.build(Result.error(404, "User not found"));
@@ -223,7 +218,8 @@ public class ProgressService {
             logUtil.info(String.valueOf(SDUId), null, request, level, "随机订单创建成功");
             return ResponseUtil.build(Result.success(order, "随机订单创建成功"));
         } catch (Exception e) {
-            logUtil.error(String.valueOf(SDUId), null, request, level, "创建订单失败: " + e.getMessage());
+            logUtil.error(String.valueOf(SDUId), null, request, null, "创建订单失败: " + e.getMessage());
+            log.error("e: ", e);
             return ResponseUtil.build(Result.error(500, "Create order failed"));
         }
     }
@@ -319,7 +315,9 @@ public class ProgressService {
                 // 如果订单状态变为finish，则需要结算coins
                 if (isFinishing) {
                     try {
-                        User user = userMapper.findBySDUId(order.getSDUId());
+                        User user = userMapper.selectOne(
+                                new LambdaQueryWrapper<User>().eq(User::getSDUId, order.getSDUId())
+                        );
                         if (user != null) {
                             // 获取订单价格作为奖励coins
                             Integer rewardCoins = order.getPrice();
@@ -330,7 +328,7 @@ public class ProgressService {
                                 user.setCoins(newCoins);
                                 
                                 // 更新maxCoins（如果新的coins超过了历史最高）
-                                Integer currentMaxCoins = user.getMaxCoins() != null ? user.getMaxCoins() : 0;
+                                int currentMaxCoins = user.getMaxCoins() != null ? user.getMaxCoins() : 0;
                                 if (newCoins > currentMaxCoins) {
                                     user.setMaxCoins(newCoins);
                                 }

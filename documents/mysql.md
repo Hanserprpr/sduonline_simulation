@@ -18,7 +18,7 @@ CREATE DATABASE sduonline_simulation
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
-    casdoor_sub VARCHAR(50) UNIQUE NOT NULL,
+    SDUId VARCHAR(50) UNIQUE NOT NULL,
     password VARCHAR(255),
     avatar VARCHAR(255),
     email VARCHAR(100) NOT NULL UNIQUE,
@@ -36,7 +36,7 @@ CREATE TABLE coins (
     sub VARCHAR(50) NOT NULL,
     coins INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (sub) REFERENCES users(casdoor_sub) ON DELETE CASCADE
+    FOREIGN KEY (sub) REFERENCES users(SDUId) ON DELETE CASCADE
 );
 ```
 
@@ -51,7 +51,7 @@ CREATE TABLE temp (
     completed_levels JSON COMMENT '已完成的关卡列表',
     total_duration INT DEFAULT 0 COMMENT '总时长（秒）',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (sub) REFERENCES users(casdoor_sub) ON DELETE CASCADE
+    FOREIGN KEY (sub) REFERENCES users(SDUId) ON DELETE CASCADE
 );
 ```
 
@@ -68,6 +68,6 @@ CREATE TABLE score_records (
     log_level VARCHAR(10),
     message TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (sub) REFERENCES users(casdoor_sub)
+    FOREIGN KEY (sub) REFERENCES users(SDUId)
 );
 ```

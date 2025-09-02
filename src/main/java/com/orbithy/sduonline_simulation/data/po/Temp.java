@@ -19,7 +19,8 @@ public class Temp {
     @TableId(type = IdType.AUTO)
     private Integer id;
 
-    private Integer SDUId;
+    @TableField("SDUId")
+    private String SDUId;
     private String message;
     private String createdAt;
 }

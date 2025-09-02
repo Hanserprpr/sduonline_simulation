@@ -21,8 +21,7 @@ public class User implements Serializable {
     private Integer id;
     private String username;
     @TableField("SDUId")
-    private Integer SDUId;
-    private String casdoorSub;
+    private String SDUId;
     private String password;
     private Integer coins;
     private Integer maxCoins;

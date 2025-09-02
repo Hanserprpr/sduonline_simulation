@@ -33,3 +33,10 @@ build/
 .vscode/
 src/main/resources/application.yml
 /logs
+
+### SDULogin ###
+src/main/java/com/orbithy/sduonline_simulation/spider
+src/main/java/com/orbithy/sduonline_simulation/util
+src/main/java/com/orbithy/sduonline_simulation/model/CasPageLogin.java
+src/main/java/com/orbithy/sduonline_simulation/controller/CasPageLoginController.java
+src/main/java/com/orbithy/sduonline_simulation/controller/CasTicketLoginController.java

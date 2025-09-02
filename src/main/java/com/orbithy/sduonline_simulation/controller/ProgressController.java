@@ -26,8 +26,8 @@ public class ProgressController {
     }
 
     @PostMapping("/begin")
-    public ResponseEntity<Result> begin(Integer SDUId, @RequestParam(required = false) String level, HttpServletRequest request) {
-        return progressService.begin(SDUId, level, request);
+    public ResponseEntity<Result> begin(@sub String sub, HttpServletRequest request) {
+        return progressService.begin(sub, request);
     }
 
     @PostMapping("/end")
