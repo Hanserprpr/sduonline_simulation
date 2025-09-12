@@ -10,6 +10,7 @@ import com.orbithy.sduonline_simulation.utils.ResponseUtil;
 import java.util.List;
 import java.util.Map;
 
+@CrossOrigin
 @RestController
 @RequestMapping("/rank")
 public class RankController {
