@@ -320,11 +320,10 @@ public class ProgressService {
                         );
                         if (user != null) {
                             // 获取订单价格作为奖励coins
-                            Integer rewardCoins = order.getPrice();
-                            if (rewardCoins != null && rewardCoins > 0) {
+                            if (total != null && total > 0) {
                                 // 更新用户coins
                                 Integer currentCoins = user.getCoins() != null ? user.getCoins() : 0;
-                                Integer newCoins = currentCoins + rewardCoins;
+                                Integer newCoins = currentCoins + total;
                                 user.setCoins(newCoins);
                                 
                                 // 更新maxCoins（如果新的coins超过了历史最高）
@@ -337,7 +336,7 @@ public class ProgressService {
                                 int userUpdateResult = userMapper.updateById(user);
                                 if (userUpdateResult > 0) {
                                     logUtil.info(String.valueOf(orderId), null, request, "updateGameStatus", 
-                                        "游戏状态更新成功，用户coins增加: " + rewardCoins + "，当前coins: " + newCoins);
+                                        "游戏状态更新成功，用户coins增加: " + total + "，当前coins: " + newCoins);
                                 } else {
                                     logUtil.error(String.valueOf(orderId), null, request, "updateGameStatus", "更新用户coins失败");
                                 }
