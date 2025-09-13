@@ -164,7 +164,7 @@ public class ProgressService {
             // 必选：产品、视觉、后端
             String[] required = {"product", "visual", "backend"};
             for (String type : required) {
-                int difficulty = 1 + random.nextInt(7);
+                int difficulty = 1 + random.nextInt(3);
                 Map<String, Object> item = new HashMap<>();
                 Map<String, String> meta = new HashMap<>(itemMeta.get(type));
                 // 从7个子任务中随机挑一个，写入描述字段，覆盖默认描述
