@@ -328,7 +328,7 @@ public class ProgressService {
                                 
                                 // 更新maxCoins（如果新的coins超过了历史最高）
                                 int currentMaxCoins = user.getMaxCoins() != null ? user.getMaxCoins() : 0;
-                                if (newCoins > currentMaxCoins) {
+                                if (total > currentMaxCoins) {
                                     user.setMaxCoins(newCoins);
                                 }
                                 
