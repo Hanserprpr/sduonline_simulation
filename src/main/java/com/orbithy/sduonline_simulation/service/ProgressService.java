@@ -43,7 +43,7 @@ public class ProgressService {
             String level = null;
             // 参数校验
             if (SDUId == null) {
-                logUtil.error("null", null, request, level, "SDUId为空");
+                logUtil.error(null, null, request, level, "SDUId为空");
                 return ResponseUtil.build(Result.error(400, "SDUId is required"));
             }
 
@@ -248,7 +248,7 @@ public class ProgressService {
         try {
             // 参数校验
             if (orderId == null) {
-                logUtil.error("null", null, request, "updateGameStatus", "订单ID为空");
+                logUtil.error(null, null, request, "updateGameStatus", "订单ID为空");
                 return ResponseUtil.build(Result.error(400, "Order ID is required"));
             }
 

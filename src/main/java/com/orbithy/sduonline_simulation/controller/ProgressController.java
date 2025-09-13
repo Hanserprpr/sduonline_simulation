@@ -8,11 +8,13 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
 
-@CrossOrigin
 @RestController
 @RequestMapping("/api/progress")
 public class ProgressController {
@@ -25,11 +27,19 @@ public class ProgressController {
 
     @PostMapping("/begin")
     public ResponseEntity<Result> begin(@sub String sub, HttpServletRequest request) {
+        if (sub == null || sub.trim().isEmpty()) {
+            return ResponseEntity.status(401)
+                    .body(Result.error(401, "用户未认证，请先登录"));
+        }
         return progressService.begin(sub, request);
     }
 
     @PostMapping("/end")
     public ResponseEntity<Result> end(@sub String sub, @RequestParam(required = false) String level, HttpServletRequest request) {
+        if (sub == null || sub.trim().isEmpty()) {
+            return ResponseEntity.status(401)
+                    .body(Result.error(401, "用户未认证，请先登录"));
+        }
         return progressService.end(sub, level, request);
     }
 

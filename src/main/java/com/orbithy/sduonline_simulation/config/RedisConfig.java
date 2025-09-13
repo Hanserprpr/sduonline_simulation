@@ -54,7 +54,10 @@ public class RedisConfig {
         RedisStandaloneConfiguration redisStandaloneConfiguration = new RedisStandaloneConfiguration();
         redisStandaloneConfiguration.setHostName(host);
         redisStandaloneConfiguration.setDatabase(database);
-        redisStandaloneConfiguration.setPassword(pwd);
+        // 只有当密码不为空时才设置密码
+        if (pwd != null && !pwd.trim().isEmpty()) {
+            redisStandaloneConfiguration.setPassword(pwd);
+        }
         redisStandaloneConfiguration.setPort(port);
         JedisClientConfiguration.JedisPoolingClientConfigurationBuilder jpcb = (JedisClientConfiguration.JedisPoolingClientConfigurationBuilder) JedisClientConfiguration.builder();
         jpcb.poolConfig(jedisPoolConfig);

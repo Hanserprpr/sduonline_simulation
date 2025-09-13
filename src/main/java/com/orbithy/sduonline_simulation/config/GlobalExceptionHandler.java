@@ -28,10 +28,27 @@ public class GlobalExceptionHandler {
         return ResponseUtil.build(Result.error(500, "Redis 服务不可用，请稍后再试"));
     }
 
+    // 捕获认证相关的异常
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    public ResponseEntity<Result> handleAccessDeniedException(org.springframework.security.access.AccessDeniedException ex) {
+        log.error("访问被拒绝: {}", ex.getMessage(), ex);
+        return ResponseUtil.build(Result.error(403, "访问被拒绝，权限不足"));
+    }
+
+    @ExceptionHandler(org.springframework.security.core.AuthenticationException.class)
+    public ResponseEntity<Result> handleAuthenticationException(org.springframework.security.core.AuthenticationException ex) {
+        log.error("认证失败: {}", ex.getMessage(), ex);
+        return ResponseUtil.build(Result.error(401, "认证失败，请重新登录"));
+    }
+
     // 捕获 NullPointerException
     @ExceptionHandler(NullPointerException.class)
     public ResponseEntity<Result> handleNullPointerException(NullPointerException ex) {
         log.error("空指针异常: {}", ex.getMessage(), ex);
+        // 检查是否是认证相关的空指针异常
+        if (ex.getMessage() != null && ex.getMessage().contains("OidcUser")) {
+            return ResponseUtil.build(Result.error(401, "用户未认证，请先登录"));
+        }
         return ResponseUtil.build(Result.error(500, "系统内部错误，请稍后再试"));
     }
 
